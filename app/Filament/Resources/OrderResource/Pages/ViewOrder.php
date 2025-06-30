@@ -23,11 +23,17 @@ class ViewOrder extends ViewRecord
             // Actions\EditAction::make(),
 
             Actions\Action::make('update-order-status')
+            ->mountUsing(function (Action $action) {
+                    $this->record->load([
+                        'items' => fn ($query) => $query->chaperone(),
+                        'totals' => fn ($query) => $query->chaperone(),
+                    ]);
+            })
             ->label('Update Status')
             ->icon('heroicon-o-truck')
             ->color('success')
             ->form([
-                        \Filament\Forms\Components\Select::make('testing')
+                        \Filament\Forms\Components\Select::make('status')
                         ->options(
                             collect(OrderStatus::cases())->mapWithKeys(fn ($case) => [
                                 $case->value => $case->getLabel(),
@@ -38,12 +44,13 @@ class ViewOrder extends ViewRecord
             ])
 
             //->visible(fn ($record) => $record->status !== 'shipped')
-            ->action(function (Component $livewire, Order $record, Action $action) {
+            ->action(function (Component $livewire, Order $record, Action $action, array $data) {
 
-               // $record->update(['status' => 'shipped']);
+
+               $record->update(['status' => $data['status']]);
 
                 Notification::make()
-                    ->title('Order marked as shipped!')
+                    ->title('Order status updated!')
                     ->success()
                     ->send();
 
@@ -52,7 +59,8 @@ class ViewOrder extends ViewRecord
 
                     $action->success();
             })
-            ->successRedirectUrl(fn () => $this->getResource()::getUrl('view', ['record' => $this->record])),
+            //->successRedirectUrl(fn () => $this->getResource()::getUrl('view', ['record' => $this->record]))
+            ,
         ];
     }
 
